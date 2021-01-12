@@ -3,6 +3,7 @@ package com.example.facerecognition;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
@@ -20,6 +21,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -50,6 +52,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
+import android.text.InputType;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -59,6 +62,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -72,6 +76,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,9 +97,12 @@ public class MainActivity extends AppCompatActivity {
     Interpreter tfLite;
     TextView textView;
     EditText editText;
-    Button Start,save,saveReco,loadReco;
-    boolean start=true;
+    Button Start,saveReco,loadReco,camera_switch;
+    ImageButton add_face;
+    CameraSelector cameraSelector;
+    boolean start=true,flipX=false;
     Context context=MainActivity.this;
+    int cam_face=CameraSelector.LENS_FACING_BACK;
 
     int[] intValues;
     int inputSize=112;
@@ -103,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
     float IMAGE_MEAN = 128.0f;
     float IMAGE_STD = 128.0f;
     int OUTPUT_SIZE=192;
+    ProcessCameraProvider cameraProvider;
 
     private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
     @Override
@@ -111,11 +120,71 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         imageView=findViewById(R.id.imageView);
         textView=findViewById(R.id.textView);
-        editText=findViewById(R.id.editText);
+        add_face=findViewById(R.id.imageButton);
         Start=findViewById(R.id.button);
-        save=findViewById(R.id.button2);
+
         saveReco=findViewById(R.id.button3);
         loadReco=findViewById(R.id.button4);
+        camera_switch=findViewById(R.id.button5);
+
+        camera_switch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (cam_face==CameraSelector.LENS_FACING_BACK) {
+                    cam_face = CameraSelector.LENS_FACING_FRONT;
+                    flipX=true;
+                }
+                else {
+                    cam_face = CameraSelector.LENS_FACING_BACK;
+                    flipX=false;
+                }
+                cameraProvider.unbindAll();
+                cameraBind();
+            }
+        });
+
+        add_face.setOnClickListener((new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (start){
+                    Start.setText("Start");
+                    start=false;}
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle("Enter Name");
+
+// Set up the input
+                final EditText input = new EditText(context);
+// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+                input.setInputType(InputType.TYPE_CLASS_TEXT );
+                builder.setView(input);
+
+// Set up the buttons
+                builder.setPositiveButton("ADD", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        //Toast.makeText(context, input.getText().toString(), Toast.LENGTH_SHORT).show();
+
+
+                        SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
+                                "0", "", -1f);
+                        result.setExtra(embeedings);
+
+                        registered.put( input.getText().toString(),result);
+                        if (!start){
+                            Start.setText("Stop");
+                            start=true;}
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+
+                builder.show();
+            }
+        }));
         String modelFile="mobile_face_net.tflite";
 
         saveReco.setOnClickListener(new View.OnClickListener() {
@@ -141,6 +210,7 @@ public class MainActivity extends AppCompatActivity {
         Start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 if (start){
                     Start.setText("Start");
                     start=false;}
@@ -159,20 +229,26 @@ public class MainActivity extends AppCompatActivity {
                         .build();
         detector = FaceDetection.getClient(highAccuracyOpts);
 
+        cameraBind();
+
+
+
+    }
+    private void cameraBind()
+    {
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+
         previewView=findViewById(R.id.previewView);
         cameraProviderFuture.addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                cameraProvider = cameraProviderFuture.get();
+
                 bindPreview(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
                 // No errors need to be handled for this Future.
                 // This should never be reached.
             }
         }, ContextCompat.getMainExecutor(this));
-
-
-
     }
     private MappedByteBuffer loadModelFile(Activity activity, String MODEL_FILE) throws IOException {
         AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_FILE);
@@ -186,8 +262,8 @@ public class MainActivity extends AppCompatActivity {
         Preview preview = new Preview.Builder()
                 .build();
 
-        CameraSelector cameraSelector = new CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+        cameraSelector = new CameraSelector.Builder()
+                .requireLensFacing(cam_face)
                 .build();
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
@@ -211,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaImage != null) {
                     image =
                             InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
-                    System.out.println("Rotation"+imageProxy.getImageInfo().getRotationDegrees());
+                    System.out.println("Rotation "+imageProxy.getImageInfo().getRotationDegrees());
                 }
                // int rotationDegrees = image.getImageInfo().getRotationDegrees();
                 System.out.println("ANALYSISSSSSS");
@@ -226,6 +302,7 @@ public class MainActivity extends AppCompatActivity {
                                                 // ...
                                                 if(faces.size()!=0) {
                                                     Face face = faces.get(0);
+                                                    System.out.println(face);
 
                                                     //write code to recreate bitmap from source
                                                     //Write code to show bitmap to canvas
@@ -233,7 +310,7 @@ public class MainActivity extends AppCompatActivity {
                                                     Bitmap frame_bmp = toBitmap(mediaImage);
 
                                                     int rot = imageProxy.getImageInfo().getRotationDegrees();
-                                                    Bitmap frame_bmp1 = rotateBitmap(frame_bmp, rot, false, false);
+                                                    Bitmap frame_bmp1 = rotateBitmap(frame_bmp, rot, flipX, false);
 
                                                     //imageView.setImageBitmap(frame_bmp1);
 
@@ -324,16 +401,7 @@ public class MainActivity extends AppCompatActivity {
 
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-        save.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
-                        "0", "", -1f);
-                result.setExtra(embeedings);
 
-                registered.put(editText.getText().toString(),result);
-            }
-        });
 
         float distance = Float.MAX_VALUE;
         String id = "0";
@@ -457,28 +525,109 @@ public class MainActivity extends AppCompatActivity {
         }
         return rotatedBitmap;
     }
+    private static byte[] YUV_420_888toNV21(Image image) {
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int ySize = width*height;
+        int uvSize = width*height/4;
+
+        byte[] nv21 = new byte[ySize + uvSize*2];
+
+        ByteBuffer yBuffer = image.getPlanes()[0].getBuffer(); // Y
+        ByteBuffer uBuffer = image.getPlanes()[1].getBuffer(); // U
+        ByteBuffer vBuffer = image.getPlanes()[2].getBuffer(); // V
+
+        int rowStride = image.getPlanes()[0].getRowStride();
+        assert(image.getPlanes()[0].getPixelStride() == 1);
+
+        int pos = 0;
+
+        if (rowStride == width) { // likely
+            yBuffer.get(nv21, 0, ySize);
+            pos += ySize;
+        }
+        else {
+            long yBufferPos = -rowStride; // not an actual position
+            for (; pos<ySize; pos+=width) {
+                yBufferPos += rowStride;
+                yBuffer.position((int) yBufferPos);
+                yBuffer.get(nv21, pos, width);
+            }
+        }
+
+        rowStride = image.getPlanes()[2].getRowStride();
+        int pixelStride = image.getPlanes()[2].getPixelStride();
+
+        assert(rowStride == image.getPlanes()[1].getRowStride());
+        assert(pixelStride == image.getPlanes()[1].getPixelStride());
+
+        if (pixelStride == 2 && rowStride == width && uBuffer.get(0) == vBuffer.get(1)) {
+            // maybe V an U planes overlap as per NV21, which means vBuffer[1] is alias of uBuffer[0]
+            byte savePixel = vBuffer.get(1);
+            try {
+                vBuffer.put(1, (byte)~savePixel);
+                if (uBuffer.get(0) == (byte)~savePixel) {
+                    vBuffer.put(1, savePixel);
+                    vBuffer.position(0);
+                    uBuffer.position(0);
+                    vBuffer.get(nv21, ySize, 1);
+                    uBuffer.get(nv21, ySize + 1, uBuffer.remaining());
+
+                    return nv21; // shortcut
+                }
+            }
+            catch (ReadOnlyBufferException ex) {
+                // unfortunately, we cannot check if vBuffer and uBuffer overlap
+            }
+
+            // unfortunately, the check failed. We must save U and V pixel by pixel
+            vBuffer.put(1, savePixel);
+        }
+
+        // other optimizations could check if (pixelStride == 1) or (pixelStride == 2),
+        // but performance gain would be less significant
+
+        for (int row=0; row<height/2; row++) {
+            for (int col=0; col<width/2; col++) {
+                int vuPos = col*pixelStride + row*rowStride;
+                nv21[pos++] = vBuffer.get(vuPos);
+                nv21[pos++] = uBuffer.get(vuPos);
+            }
+        }
+
+        return nv21;
+    }
 
     private Bitmap toBitmap(Image image) {
-        Image.Plane[] planes = image.getPlanes();
-        ByteBuffer yBuffer = planes[0].getBuffer();
-        ByteBuffer uBuffer = planes[1].getBuffer();
-        ByteBuffer vBuffer = planes[2].getBuffer();
 
-        int ySize = yBuffer.remaining();
-        int uSize = uBuffer.remaining();
-        int vSize = vBuffer.remaining();
+//        Image.Plane[] planes = image.getPlanes();
+//        ByteBuffer yBuffer = planes[0].getBuffer();
+//        ByteBuffer uBuffer = planes[1].getBuffer();
+//        ByteBuffer vBuffer = planes[2].getBuffer();
+        //System.out.println("Plane"+ Arrays.toString(planes) +"ybuff"+yBuffer);
 
-        byte[] nv21 = new byte[ySize + uSize + vSize];
+//        int ySize = yBuffer.remaining();
+//        int uSize = uBuffer.remaining();
+//        int vSize = vBuffer.remaining();
+        //System.out.println("y"+ySize+"uSize"+uSize+"v"+vSize);
+        byte[] nv21=YUV_420_888toNV21(image);
+        //byte[] nv21 = new byte[ySize + uSize + vSize];
         //U and V are swapped
-        yBuffer.get(nv21, 0, ySize);
-        vBuffer.get(nv21, ySize, vSize);
-        uBuffer.get(nv21, ySize + vSize, uSize);
+//        yBuffer.get(nv21, 0, ySize);
+//        vBuffer.get(nv21, ySize, vSize);
+//        uBuffer.get(nv21, ySize + vSize, uSize);
 
         YuvImage yuvImage = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
+        //System.out.println("yuvimage"+yuvImage);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         yuvImage.compressToJpeg(new Rect(0, 0, yuvImage.getWidth(), yuvImage.getHeight()), 75, out);
 
         byte[] imageBytes = out.toByteArray();
+        //System.out.println("bytes"+ Arrays.toString(imageBytes));
+
+        //System.out.println("FORMAT"+image.getFormat());
+        //imageView.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length));
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
     }
 
