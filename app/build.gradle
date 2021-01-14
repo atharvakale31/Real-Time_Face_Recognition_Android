@@ -42,6 +42,8 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment:2.3.2'
     implementation 'androidx.navigation:navigation-ui:2.3.2'
     implementation 'com.google.code.gson:gson:2.8.6'
+    def lottieVersion = "3.4.0"
+    implementation "com.airbnb.android:lottie:$lottieVersion"
 
     // CameraX core library using the camera2 implementation
     def camerax_version = "1.0.0-rc01"

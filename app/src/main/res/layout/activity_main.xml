@@ -7,47 +7,37 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/button3"
-        android:layout_width="92dp"
-        android:layout_height="51dp"
-        android:text="Save Reco"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/button4"
-        app:layout_constraintEnd_toStartOf="@+id/imageView"
-        app:layout_constraintHorizontal_bias="0.741"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout"
-        app:layout_constraintVertical_bias="0.878"
-        tools:visibility="invisible" />
-
-    <Button
-        android:id="@+id/button4"
-        android:layout_width="93dp"
-        android:layout_height="49dp"
-        android:layout_marginBottom="152dp"
-        android:text="Load Reco"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/imageView"
-        app:layout_constraintHorizontal_bias="0.727"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:visibility="invisible" />
-
     <FrameLayout
         android:id="@+id/container"
-        android:layout_width="282dp"
-        android:layout_height="270dp"
+        android:layout_width="297dp"
+        android:layout_height="279dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.060000002">
 
+        <Button
+            android:id="@+id/button5"
+            android:layout_width="68dp"
+            android:layout_height="65dp"
+            android:layout_marginStart="229dp"
+            android:layout_marginEnd="229dp"
+            android:layout_marginRight="229dp"
+            android:background="@drawable/cam"
+            android:backgroundTint="@color/teal_200"
+            android:elevation="1dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:layout_conversion_absoluteHeight="63dp"
+            tools:layout_conversion_absoluteWidth="62dp" />
+
         <androidx.camera.view.PreviewView
             android:id="@+id/previewView"
-            android:layout_width="285dp"
-            android:layout_height="match_parent" />
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </androidx.camera.view.PreviewView>
     </FrameLayout>
 
     <ImageButton
@@ -69,64 +59,77 @@
         android:elevation="1dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.74"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/container"
-        app:layout_constraintVertical_bias="0.484"
+        app:layout_constraintVertical_bias="0.52"
         tools:srcCompat="@android:drawable/screen_background_light_transparent" />
 
     <LinearLayout
-        android:id="@+id/linearLayout"
-        android:layout_width="368dp"
-        android:layout_height="50dp"
+        android:layout_width="320dp"
+        android:layout_height="63dp"
         android:layout_marginTop="8dp"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/container">
 
-        <LinearLayout
-            android:layout_width="352dp"
+        <Button
+            android:id="@+id/button"
+            android:layout_width="108dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:text="Save"
+            android:visibility="visible"
+            tools:visibility="visible" />
 
-            <TextView
-                android:id="@+id/textView"
-                android:layout_width="166dp"
-                android:layout_height="match_parent"
-                android:text="Recognition"
-                android:textAlignment="center"
-                android:textColor="@color/purple_500"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/round_bg"
+            android:text="Recognize"
+            android:textAlignment="center"
+            android:visibility="visible"
+            tools:visibility="visible" />
 
-            <Button
-                android:id="@+id/button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Stop" />
-
-            <Button
-                android:id="@+id/button5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Switch" />
-
-        </LinearLayout>
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="wrap_content"
+            android:layout_height="49dp"
+            android:layout_marginBottom="316dp"
+            android:text="Load Reco"
+            android:visibility="visible"
+            tools:visibility="visible" />
 
     </LinearLayout>
 
     <TextView
         android:id="@+id/textView2"
-        android:layout_width="155dp"
-        android:layout_height="110dp"
-        android:text="Your Face preview will appear here.\nBring Face in view of Camera.\nClick Add button to save face."
+        android:layout_width="164dp"
+        android:layout_height="165dp"
         android:textColor="@color/black"
         android:textSize="15sp"
         app:layout_constraintBottom_toBottomOf="@+id/imageView"
         app:layout_constraintEnd_toEndOf="@+id/imageView"
+        app:layout_constraintHorizontal_bias="0.487"
         app:layout_constraintStart_toStartOf="@+id/imageView"
         app:layout_constraintTop_toTopOf="@+id/imageView"
-        app:layout_constraintVertical_bias="0.466" />
+        app:layout_constraintVertical_bias="0.914" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="164dp"
+        android:layout_height="wrap_content"
+        android:hint="Recognized Face"
+        android:textAlignment="center"
+        android:textColor="@color/purple_500"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/imageView"
+        app:layout_constraintEnd_toEndOf="@+id/imageView"
+        app:layout_constraintHorizontal_bias="0.487"
+        app:layout_constraintStart_toStartOf="@+id/imageView"
+        app:layout_constraintTop_toTopOf="@+id/imageView"
+        app:layout_constraintVertical_bias="0.479" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

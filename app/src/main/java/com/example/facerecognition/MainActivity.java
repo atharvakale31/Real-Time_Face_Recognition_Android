@@ -1,10 +1,12 @@
 package com.example.facerecognition;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,12 +19,13 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.YuvImage;
 import android.media.Image;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
-import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
@@ -36,8 +39,6 @@ import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
 
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.mlkit.vision.common.InputImage;
@@ -47,19 +48,15 @@ import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import android.text.InputType;
-import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
 import android.view.View;
 
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -79,7 +76,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -95,9 +91,9 @@ public class MainActivity extends AppCompatActivity {
     PreviewView previewView;
     ImageView imageView;
     Interpreter tfLite;
-    TextView textView;
+    TextView reco_name,preview_info;
     EditText editText;
-    Button Start,saveReco,loadReco,camera_switch;
+    Button Start, recognize,save_reco,loadReco,camera_switch;
     ImageButton add_face;
     CameraSelector cameraSelector;
     boolean start=true,flipX=false;
@@ -112,20 +108,27 @@ public class MainActivity extends AppCompatActivity {
     float IMAGE_STD = 128.0f;
     int OUTPUT_SIZE=192;
     ProcessCameraProvider cameraProvider;
+    private static final int MY_CAMERA_REQUEST_CODE = 100;
 
     private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         imageView=findViewById(R.id.imageView);
-        textView=findViewById(R.id.textView);
+        reco_name =findViewById(R.id.textView);
+        preview_info =findViewById(R.id.textView2);
         add_face=findViewById(R.id.imageButton);
-        Start=findViewById(R.id.button);
-
-        saveReco=findViewById(R.id.button3);
+        save_reco=findViewById(R.id.button);
+        reco_name.setVisibility(View.INVISIBLE);
+        recognize=findViewById(R.id.button3);
         loadReco=findViewById(R.id.button4);
         camera_switch=findViewById(R.id.button5);
+        preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
+        }
 
         camera_switch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -146,9 +149,7 @@ public class MainActivity extends AppCompatActivity {
         add_face.setOnClickListener((new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (start){
-                    Start.setText("Start");
-                    start=false;}
+
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setTitle("Enter Name");
 
@@ -170,9 +171,7 @@ public class MainActivity extends AppCompatActivity {
                         result.setExtra(embeedings);
 
                         registered.put( input.getText().toString(),result);
-                        if (!start){
-                            Start.setText("Stop");
-                            start=true;}
+
                     }
                 });
                 builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -187,11 +186,31 @@ public class MainActivity extends AppCompatActivity {
         }));
         String modelFile="mobile_face_net.tflite";
 
-        saveReco.setOnClickListener(new View.OnClickListener() {
+        recognize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(recognize.getText().toString().equals("Recognize"))
+                {
+                recognize.setText("Add Face");
+                add_face.setVisibility(View.INVISIBLE);
+                reco_name.setVisibility(View.VISIBLE);
+                imageView.setVisibility(View.INVISIBLE);
+                preview_info.setText("\n    Recognized Face:");
+                //preview_info.setVisibility(View.INVISIBLE);
+                }
+                else
+                {
+                    recognize.setText("Recognize");
+                    add_face.setVisibility(View.VISIBLE);
+                    reco_name.setVisibility(View.INVISIBLE);
+                    imageView.setVisibility(View.VISIBLE);
+                    preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
+                    //preview_info.setVisibility(View.VISIBLE);
+
+                }
+
                 //saveMap(registered);
-                insertToSP(registered);
+               // insertToSP(registered);
             }
         });
         loadReco.setOnClickListener(new View.OnClickListener() {
@@ -207,17 +226,19 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Start.setOnClickListener(new View.OnClickListener() {
+        save_reco.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                if (start){
-                    Start.setText("Start");
-                    start=false;}
-                else {
-                    Start.setText("Stop");
-                    start = true;
-                }
+                insertToSP(registered);
+
+//                if (start){
+//                    Start.setText("Start");
+//                    start=false;}
+//                else {
+//                    Start.setText("Stop");
+//                    start = true;
+//                }
             }
         });
 
@@ -233,6 +254,17 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == MY_CAMERA_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "camera permission granted", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "camera permission denied", Toast.LENGTH_LONG).show();
+            }
+        }
     }
     private void cameraBind()
     {
@@ -416,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
                 label = name;
                 distance = nearest.second;
 
-                textView.setText(name);
+                reco_name.setText(name);
                     System.out.println("nearest: " + name + " - distance: " + distance);
 
 
@@ -688,11 +720,19 @@ public class MainActivity extends AppCompatActivity {
         TypeToken<HashMap<String,SimilarityClassifier.Recognition>> token = new TypeToken<HashMap<String,SimilarityClassifier.Recognition>>() {};
         HashMap<String,SimilarityClassifier.Recognition> retrievedMap=new Gson().fromJson(json,token.getType());
         System.out.println("Output map"+retrievedMap.toString());
-        float[][] outut = new float[1][OUTPUT_SIZE];
+        //float[][] outut = new float[1][OUTPUT_SIZE];
 
         for (Map.Entry<String, SimilarityClassifier.Recognition> entry : retrievedMap.entrySet())
         {
-            System.out.println("Entry ouput "+entry.getKey()+" "+ entry.getValue().getExtra());
+            float[][] outut=new float[1][OUTPUT_SIZE];
+            ArrayList arrayList= (ArrayList) entry.getValue().getExtra();
+            arrayList = (ArrayList) arrayList.get(0);
+            for (int counter = 0; counter < arrayList.size(); counter++) {
+                outut[0][counter]= ((Double) arrayList.get(counter)).floatValue();
+            }
+            entry.getValue().setExtra(outut);
+
+            //System.out.println("Entry ouput "+entry.getKey()+" "+entry.getValue().getExtra() );
 
         }
 //        System.out.println("OUTUTUTUTU"+ Arrays.deepToString(outut));
