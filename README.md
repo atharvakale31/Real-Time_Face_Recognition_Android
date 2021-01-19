@@ -59,7 +59,7 @@ git clone https://github.com/atharvakale31/Face_Recognition_Android.git
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
+
 
 # Action Items
 - [ ] Improve Performance(Code Optimization)
