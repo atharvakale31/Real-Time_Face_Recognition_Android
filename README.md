@@ -1,4 +1,4 @@
-# Real Time Face Recognition using TfLite
+# Real Time Face Recognition App using TfLite
 This project is developed with the aim that the user should be able to implement this Face recognition module inside any other application where Face Recognition is required without any additional requirements.
 ## Key Features 
 - Fast and very accurate.
