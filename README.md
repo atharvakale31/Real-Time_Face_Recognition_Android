@@ -22,7 +22,7 @@ This project is developed with the aim that the user should be able to implement
 Use Import from Version Control in Android Studio or Clone repo and open the project in Android Studio.
 
 ```bash
-git clone https://github.com/atharvakale31/Face_Recognition.git
+git clone https://github.com/atharvakale31/Face_Recognition_Android.git
 ```
 
 ## Usage
