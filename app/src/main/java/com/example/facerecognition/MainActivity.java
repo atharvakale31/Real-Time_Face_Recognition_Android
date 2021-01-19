@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
                 builder.setTitle("Select Action:");
 
 // add a checkbox list
-                String[] names= {"View Recognition List","Update Recognition List","Save Recognitions","Load Recognitions","Clear All Recognitions","Import Photo"};
+                String[] names= {"View Recognition List","Update Recognition List","Save Recognitions","Load Recognitions","Clear All Recognitions","Import Photo (Beta)"};
 
                 builder.setItems(names, new DialogInterface.OnClickListener() {
                     @Override
@@ -643,8 +643,10 @@ public class MainActivity extends AppCompatActivity {
                 final String name = nearest.first;
                 label = name;
                 distance = nearest.second;
-
-                reco_name.setText(name);
+                if(distance<1.000f)
+                    reco_name.setText(name);
+                else
+                    reco_name.setText("Unknown");
                     System.out.println("nearest: " + name + " - distance: " + distance);
 
 
