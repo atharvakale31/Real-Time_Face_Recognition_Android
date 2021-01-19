@@ -55,13 +55,14 @@ git clone https://github.com/atharvakale31/Face_Recognition_Android.git
     <td><img src="demo/update_reco.jpeg" width=270 height=480></td>
   </tr>
  </table>
-  
-
-
-
-
+ 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
+
+# Action Items
+- [ ] Improve Performance(Code Optimization)
+- [ ] Auto face orientation for Import Photo Action.
+- [ ] iOS application
 
