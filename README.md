@@ -26,14 +26,35 @@ git clone https://github.com/atharvakale31/Face_Recognition.git
 ```
 
 ## Usage
-- Add Face
-![](demo/add_face.gif)
-- Recognize Face
-![](demo/recognize_face.gif)
-- Actions
-![](demo/actions.jpeg)
-![](demo/view_reco.jpeg)
-![](demo/update_reco.jpeg)
+<table>
+  <tr>
+    <td>Add Face</td>
+     <td> Recognize Face</td>
+     
+  </tr>
+  <tr>
+    <td><img src="demo/add_face.gif" width=270 height=480></td>
+    <td><img src="demo/recognize_face.gif" width=270 height=480></td>
+  </tr>
+ </table>
+ 
+
+ 
+ <table>
+  <tr>
+    <td>Actions</td>
+     <td>View Recognitions</td>
+     <td>Update Recognitions</td>
+  </tr>
+  <tr>
+    <td><img src="demo/actions.jpeg" width=270 height=480></td>
+    <td><img src="demo/view_reco.jpeg" width=270 height=480></td>
+    <td><img src="demo/update_reco.jpeg" width=270 height=480></td>
+  </tr>
+ </table>
+  
+
+
 
 
 ## Contributing
