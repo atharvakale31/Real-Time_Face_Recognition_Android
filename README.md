@@ -24,13 +24,14 @@ Use Import from Version Control in Android Studio or Clone repo and open the pro
 ```bash
 git clone https://github.com/atharvakale31/Face_Recognition_Android.git
 ```
+Application file : [Face_Recognition.apk](https://drive.google.com/file/d/1l1ldvOUkI2y8WIq2IowxEiiAdhU2twYH/view?usp=sharing)
 
 ## Usage
 <table>
   <tr>
-    <td><b>Add Face</b></td>
-     <td><b> Import Face</b></td>
-     <td><b> Recognize Face</b></td>
+    <td><b>1.Add Face</b></td>
+     <td><b>2.Import Face</b></td>
+     <td><b>3.Recognize Face</b></td>
      
   </tr>
   <tr>
@@ -47,7 +48,7 @@ git clone https://github.com/atharvakale31/Face_Recognition_Android.git
   <tr>
     <td><b>Actions</b></td>
      <td><b>View Recognitions</b></td>
-     <td><b>Update Recognitions<.b></td>
+     <td><b>Update Recognitions</b></td>
   </tr>
   <tr>
     <td><img src="demo/actions.jpeg" width=270 height=480></td>
