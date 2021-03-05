@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -56,7 +55,6 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import android.os.ParcelFileDescriptor;
-import android.provider.MediaStore;
 import android.text.InputType;
 import android.util.Pair;
 import android.util.Size;
@@ -101,28 +99,27 @@ public class MainActivity extends AppCompatActivity {
     CameraSelector cameraSelector;
     boolean start=true,flipX=false;
     Context context=MainActivity.this;
-    int cam_face=CameraSelector.LENS_FACING_BACK;
+    int cam_face=CameraSelector.LENS_FACING_BACK; //Default Back Camera
 
     int[] intValues;
-    int inputSize=112;
+    int inputSize=112;  //Input size for model
     boolean isModelQuantized=false;
     float[][] embeedings;
     float IMAGE_MEAN = 128.0f;
     float IMAGE_STD = 128.0f;
-    int OUTPUT_SIZE=192;
+    int OUTPUT_SIZE=192; //Output size of model
     private static int SELECT_PICTURE = 1;
     ProcessCameraProvider cameraProvider;
     private static final int MY_CAMERA_REQUEST_CODE = 100;
-    private String selectedImagePath;
-    //ADDED
-    private String filemanagerstring;
 
-    private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
+    String modelFile="mobile_face_net.tflite"; //model name
+
+    private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>(); //saved Faces
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        registered=readFromSP();
+        registered=readFromSP(); //Load saved faces from memory when app starts
         setContentView(R.layout.activity_main);
         face_preview =findViewById(R.id.imageView);
         reco_name =findViewById(R.id.textView);
@@ -135,16 +132,18 @@ public class MainActivity extends AppCompatActivity {
         camera_switch=findViewById(R.id.button5);
         actions=findViewById(R.id.button2);
         preview_info.setText("\n        Recognized Face:");
+        //Camera Permission
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
         }
+        //On-screen Action Button
         actions.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setTitle("Select Action:");
 
-// add a checkbox list
+                // add a checkbox list
                 String[] names= {"View Recognition List","Update Recognition List","Save Recognitions","Load Recognitions","Clear All Recognitions","Import Photo (Beta)"};
 
                 builder.setItems(names, new DialogInterface.OnClickListener() {
@@ -185,12 +184,13 @@ public class MainActivity extends AppCompatActivity {
                 });
                 builder.setNegativeButton("Cancel", null);
 
-// create and show the alert dialog
+                // create and show the alert dialog
                 AlertDialog dialog = builder.create();
                 dialog.show();
             }
         });
 
+        //On-screen switch to toggle between Cameras.
         camera_switch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -211,45 +211,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-//                start=false;
-//                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-//                builder.setTitle("Enter Name");
-//
-//// Set up the input
-//                final EditText input = new EditText(context);
-//// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
-//                input.setInputType(InputType.TYPE_CLASS_TEXT );
-//                builder.setView(input);
-//
-//// Set up the buttons
-//                builder.setPositiveButton("ADD", new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        //Toast.makeText(context, input.getText().toString(), Toast.LENGTH_SHORT).show();
-//
-//
-//                        SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
-//                                "0", "", -1f);
-//                        result.setExtra(embeedings);
-//
-//                        registered.put( input.getText().toString(),result);
-//                        start=true;
-//
-//                    }
-//                });
-//                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        start=true;
-//                        dialog.cancel();
-//                    }
-//                });
-//
-//                builder.show();
                 addFace();
             }
         }));
-        String modelFile="mobile_face_net.tflite";
+
 
         recognize.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -271,20 +236,20 @@ public class MainActivity extends AppCompatActivity {
                     reco_name.setVisibility(View.INVISIBLE);
                     face_preview.setVisibility(View.VISIBLE);
                     preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
-                    //preview_info.setVisibility(View.VISIBLE);
+
 
                 }
 
-                //saveMap(registered);
-               // insertToSP(registered);
             }
         });
+
+        //Load model
         try {
             tfLite=new Interpreter(loadModelFile(MainActivity.this,modelFile));
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        //Initialize Face Detector
         FaceDetectorOptions highAccuracyOpts =
                 new FaceDetectorOptions.Builder()
                         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
@@ -304,19 +269,19 @@ public class MainActivity extends AppCompatActivity {
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setTitle("Enter Name");
 
-// Set up the input
+                // Set up the input
             final EditText input = new EditText(context);
-// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+
             input.setInputType(InputType.TYPE_CLASS_TEXT );
             builder.setView(input);
 
-// Set up the buttons
+                // Set up the buttons
             builder.setPositiveButton("ADD", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     //Toast.makeText(context, input.getText().toString(), Toast.LENGTH_SHORT).show();
 
-
+                    //Create and Initialize new object with Face embeddings and Name.
                     SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
                             "0", "", -1f);
                     result.setExtra(embeedings);
@@ -363,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
         else{
             builder.setTitle("Select Recognition to delete:");
 
-// add a checkbox list
+        // add a checkbox list
         String[] names= new String[registered.size()];
         boolean[] checkedItems = new boolean[registered.size()];
          int i=0;
@@ -386,11 +351,11 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-// add OK and Cancel buttons
+
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // user clicked OK
+
                        // System.out.println("status:"+ Arrays.toString(checkedItems));
                         for(int i=0;i<checkedItems.length;i++)
                         {
@@ -407,7 +372,7 @@ public class MainActivity extends AppCompatActivity {
         });
         builder.setNegativeButton("Cancel", null);
 
-// create and show the alert dialog
+        // create and show the alert dialog
         AlertDialog dialog = builder.create();
         dialog.show();
     }
@@ -421,7 +386,7 @@ public class MainActivity extends AppCompatActivity {
         else
             builder.setTitle("Recognitions:");
 
-// add a checkbox list
+        // add a checkbox list
         String[] names= new String[registered.size()];
         boolean[] checkedItems = new boolean[registered.size()];
         int i=0;
@@ -436,7 +401,7 @@ public class MainActivity extends AppCompatActivity {
         builder.setItems(names,null);
 
 
-// add OK and Cancel buttons
+
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -444,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-// create and show the alert dialog
+            // create and show the alert dialog
         AlertDialog dialog = builder.create();
         dialog.show();
     }
@@ -462,6 +427,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    private MappedByteBuffer loadModelFile(Activity activity, String MODEL_FILE) throws IOException {
+        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_FILE);
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
+    //Bind camera and preview view
     private void cameraBind()
     {
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
@@ -473,18 +449,10 @@ public class MainActivity extends AppCompatActivity {
 
                 bindPreview(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
-                // No errors need to be handled for this Future.
+                // No errors need to be handled for this in Future.
                 // This should never be reached.
             }
         }, ContextCompat.getMainExecutor(this));
-    }
-    private MappedByteBuffer loadModelFile(Activity activity, String MODEL_FILE) throws IOException {
-        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_FILE);
-        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-        FileChannel fileChannel = inputStream.getChannel();
-        long startOffset = fileDescriptor.getStartOffset();
-        long declaredLength = fileDescriptor.getDeclaredLength();
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
     void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
         Preview preview = new Preview.Builder()
@@ -498,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
         ImageAnalysis imageAnalysis =
                 new ImageAnalysis.Builder()
                         .setTargetResolution(new Size(640, 480))
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) //Latest frame is shown
                         .build();
 
         Executor executor = Executors.newSingleThreadExecutor();
@@ -509,52 +477,55 @@ public class MainActivity extends AppCompatActivity {
                 InputImage image = null;
 
 
-                @SuppressLint("UnsafeExperimentalUsageError") Image mediaImage = imageProxy.getImage();
-               // Bitmap frame_bmp=toBitmap(mediaImage);
-                //frame_bmp=rotateBitmap(frame_bmp,imageProxy.getImageInfo().getRotationDegrees(),false,false);
+                @SuppressLint("UnsafeExperimentalUsageError")
+                // Camera Feed-->Analyzer-->ImageProxy-->mediaImage-->InputImage(needed for ML kit face detection)
+
+                Image mediaImage = imageProxy.getImage();
+
                 if (mediaImage != null) {
-                    image =
-                            InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
+                    image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
                     System.out.println("Rotation "+imageProxy.getImageInfo().getRotationDegrees());
                 }
-               // int rotationDegrees = image.getImageInfo().getRotationDegrees();
+
                 System.out.println("ANALYSIS");
-                //Bitmap finalFrame_bmp = frame_bmp;
+
+                //Process acquired image to detect faces
                 Task<List<Face>> result =
                         detector.process(image)
                                 .addOnSuccessListener(
                                         new OnSuccessListener<List<Face>>() {
                                             @Override
                                             public void onSuccess(List<Face> faces) {
-                                                // Task completed successfully
-                                                // ...
+
                                                 if(faces.size()!=0) {
-                                                    Face face = faces.get(0);
+                                                    Face face = faces.get(0); //Get first face from detected faces
                                                     System.out.println(face);
 
-                                                    //write code to recreate bitmap from source
-                                                    //Write code to show bitmap to canvas
-
+                                                    //mediaImage to Bitmap
                                                     Bitmap frame_bmp = toBitmap(mediaImage);
 
                                                     int rot = imageProxy.getImageInfo().getRotationDegrees();
+
+                                                    //Adjust orientation of Face
                                                     Bitmap frame_bmp1 = rotateBitmap(frame_bmp, rot, flipX, false);
 
-                                                    //face_preview.setImageBitmap(frame_bmp1);
 
 
+                                                    //Get bounding box of face
                                                     RectF boundingBox = new RectF(face.getBoundingBox());
 
-
+                                                    //Crop out bounding box from whole Bitmap(image)
                                                     Bitmap cropped_face = getCropBitmapByCPU(frame_bmp1, boundingBox);
 
+
+                                                    //Scale the acquired Face to 112*112 which is required input for model
                                                     Bitmap scaled = getResizedBitmap(cropped_face, 112, 112);
-                                                   // face_preview.setImageBitmap(scaled);
+
                                                     if(start)
-                                                        recognizeImage(scaled,true);
+                                                        recognizeImage(scaled); //Send scaled bitmap to create face embeddings.
                                                     System.out.println(boundingBox);
                                                     try {
-                                                        Thread.sleep(100);
+                                                        Thread.sleep(100);  //Camera preview refreshed every 100 millisec(adjust as required)
                                                     } catch (InterruptedException e) {
                                                         e.printStackTrace();
                                                     }
@@ -574,10 +545,10 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onComplete(@NonNull Task<List<Face>> task) {
 
-                                imageProxy.close();
+                                imageProxy.close(); //v.important to acquire next frame for analysis
                             }
                         });
-                // insert your code here.
+
 
             }
         });
@@ -585,11 +556,15 @@ public class MainActivity extends AppCompatActivity {
 
         cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, preview);
 
-       // Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner)this, cameraSelector, preview);
+
     }
-    //List<SimilarityClassifier.Recognition>
-    public List<SimilarityClassifier.Recognition> recognizeImage(final Bitmap bitmap, boolean storeExtra) {
-        // Log this method so that it can be analyzed with systrace.
+
+    public void recognizeImage(final Bitmap bitmap) {
+
+        // set Face to Preview
+        face_preview.setImageBitmap(bitmap);
+
+        //Create ByteBuffer to store normalized image
 
         ByteBuffer imgData = ByteBuffer.allocateDirect(1 * inputSize * inputSize * 3 * 4);
 
@@ -597,9 +572,9 @@ public class MainActivity extends AppCompatActivity {
 
         intValues = new int[inputSize * inputSize];
 
-
+        //get pixel values from Bitmap to normalize
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-        face_preview.setImageBitmap(bitmap);
+
         imgData.rewind();
 
         for (int i = 0; i < inputSize; ++i) {
@@ -618,16 +593,17 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-
+        //imgData is input to our model
         Object[] inputArray = {imgData};
 
         Map<Integer, Object> outputMap = new HashMap<>();
 
-        embeedings = new float[1][OUTPUT_SIZE];
+
+        embeedings = new float[1][OUTPUT_SIZE]; //output of model will be stored in this variable
 
         outputMap.put(0, embeedings);
 
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+        tfLite.runForMultipleInputsOutputs(inputArray, outputMap); //Run model
 
 
 
@@ -635,15 +611,17 @@ public class MainActivity extends AppCompatActivity {
         String id = "0";
         String label = "?";
 
+        //Compare new face with saved Faces.
         if (registered.size() > 0) {
-            //LOGGER.i("dataset SIZE: " + registered.size());
-            final Pair<String, Float> nearest = findNearest(embeedings[0]);
+
+            final Pair<String, Float> nearest = findNearest(embeedings[0]);//Find closest matching face
+
             if (nearest != null) {
 
                 final String name = nearest.first;
                 label = name;
                 distance = nearest.second;
-                if(distance<1.000f)
+                if(distance<1.000f) //If distance between Closest found face is more than 1.000 ,then output UNKNOWN face.
                     reco_name.setText(name);
                 else
                     reco_name.setText("Unknown");
@@ -654,26 +632,21 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
-            final int numDetectionsOutput = 1;
-            final ArrayList<SimilarityClassifier.Recognition> recognitions = new ArrayList<>(numDetectionsOutput);
-            SimilarityClassifier.Recognition rec = new SimilarityClassifier.Recognition(
-                    id,
-                    label,
-                    distance);
+//            final int numDetectionsOutput = 1;
+//            final ArrayList<SimilarityClassifier.Recognition> recognitions = new ArrayList<>(numDetectionsOutput);
+//            SimilarityClassifier.Recognition rec = new SimilarityClassifier.Recognition(
+//                    id,
+//                    label,
+//                    distance);
+//
+//            recognitions.add( rec );
 
-            recognitions.add( rec );
-
-//        if (storeExtra) {
-//            rec.setExtra(embeedings);
-//        }
-
-
-        return recognitions;
     }
-    public void register(String name, SimilarityClassifier.Recognition rec) {
-        registered.put(name, rec);
-    }
+//    public void register(String name, SimilarityClassifier.Recognition rec) {
+//        registered.put(name, rec);
+//    }
 
+    //Compare Faces by distance between face embeddings
     private Pair<String, Float> findNearest(float[] emb) {
 
         Pair<String, Float> ret = null;
@@ -681,7 +654,6 @@ public class MainActivity extends AppCompatActivity {
 
             final String name = entry.getKey();
            final float[] knownEmb = ((float[][]) entry.getValue().getExtra())[0];
-//            final float[] knownEmb = (float[]) entry.getValue().getExtra();
 
             float distance = 0;
             for (int i = 0; i < emb.length; i++) {
@@ -755,6 +727,8 @@ public class MainActivity extends AppCompatActivity {
         }
         return rotatedBitmap;
     }
+
+    //IMPORTANT. If conversion not done ,the toBitmap conversion does not work on some devices.
     private static byte[] YUV_420_888toNV21(Image image) {
 
         int width = image.getWidth();
@@ -835,7 +809,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         YuvImage yuvImage = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
-        //System.out.println("yuvimage"+yuvImage);
+
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         yuvImage.compressToJpeg(new Rect(0, 0, yuvImage.getWidth(), yuvImage.getHeight()), 75, out);
 
@@ -843,10 +817,11 @@ public class MainActivity extends AppCompatActivity {
         //System.out.println("bytes"+ Arrays.toString(imageBytes));
 
         //System.out.println("FORMAT"+image.getFormat());
-        //face_preview.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length));
+
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
     }
 
+    //Save Faces to Shared Preferences.Conversion of Recognition objects to json string
     private void insertToSP(HashMap<String, SimilarityClassifier.Recognition> jsonMap,boolean clear) {
         if(clear)
             jsonMap.clear();
@@ -864,6 +839,8 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
         Toast.makeText(context, "Recognitions Saved", Toast.LENGTH_SHORT).show();
     }
+
+    //Load Faces from Shared Preferences.Json String to Recognition object
     private HashMap<String, SimilarityClassifier.Recognition> readFromSP(){
         SharedPreferences sharedPreferences = getSharedPreferences("HashMap", MODE_PRIVATE);
         String defValue = new Gson().toJson(new HashMap<String, SimilarityClassifier.Recognition>());
@@ -872,26 +849,28 @@ public class MainActivity extends AppCompatActivity {
         TypeToken<HashMap<String,SimilarityClassifier.Recognition>> token = new TypeToken<HashMap<String,SimilarityClassifier.Recognition>>() {};
         HashMap<String,SimilarityClassifier.Recognition> retrievedMap=new Gson().fromJson(json,token.getType());
        // System.out.println("Output map"+retrievedMap.toString());
-        //float[][] outut = new float[1][OUTPUT_SIZE];
 
+        //During type conversion and save/load procedure,format changes(eg float converted to double).
+        //So embeddings need to be extracted from it in required format(eg.double to float).
         for (Map.Entry<String, SimilarityClassifier.Recognition> entry : retrievedMap.entrySet())
         {
-            float[][] outut=new float[1][OUTPUT_SIZE];
+            float[][] output=new float[1][OUTPUT_SIZE];
             ArrayList arrayList= (ArrayList) entry.getValue().getExtra();
             arrayList = (ArrayList) arrayList.get(0);
             for (int counter = 0; counter < arrayList.size(); counter++) {
-                outut[0][counter]= ((Double) arrayList.get(counter)).floatValue();
+                output[0][counter]= ((Double) arrayList.get(counter)).floatValue();
             }
-            entry.getValue().setExtra(outut);
+            entry.getValue().setExtra(output);
 
-            //System.out.println("Entry ouput "+entry.getKey()+" "+entry.getValue().getExtra() );
+            //System.out.println("Entry output "+entry.getKey()+" "+entry.getValue().getExtra() );
 
         }
-//        System.out.println("OUTUTUTUTU"+ Arrays.deepToString(outut));
+//        System.out.println("OUTPUT"+ Arrays.deepToString(outut));
         Toast.makeText(context, "Recognitions Loaded", Toast.LENGTH_SHORT).show();
         return retrievedMap;
     }
 
+    //Load Photo from phone storage
     private void loadphoto()
     {
         start=false;
@@ -901,10 +880,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), SELECT_PICTURE);
     }
 
-
-    /**
-     * helper to retrieve the path of an image URI
-     */
+    //Similar Analyzing Procedure
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
@@ -947,7 +923,7 @@ public class MainActivity extends AppCompatActivity {
                                 Bitmap scaled = getResizedBitmap(cropped_face, 112, 112);
                                 // face_preview.setImageBitmap(scaled);
 
-                                    recognizeImage(scaled,true);
+                                    recognizeImage(scaled);
                                     addFace();
                                 System.out.println(boundingBox);
                                 try {
@@ -969,42 +945,11 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                //OI FILE Manager
-                //filemanagerstring = selectedImageUri.getPath();
 
-                //MEDIA GALLERY
-                //selectedImagePath = getPath(selectedImageUri);
-
-//                //DEBUG PURPOSE - you can delete this if you want
-//                if (selectedImagePath != null)
-//                    System.out.println(selectedImagePath);
-//                else System.out.println("selectedImagePath is null");
-//                if (filemanagerstring != null)
-//                    System.out.println(filemanagerstring);
-//                else System.out.println("filemanagerstring is null");
-//
-//                //NOW WE HAVE OUR WANTED STRING
-//                if (selectedImagePath != null)
-//                    System.out.println("selectedImagePath is the right one for you!");
-//                else
-//                    System.out.println("filemanagerstring is the right one for you!");
             }
         }
     }
-//    public String getPath(Uri uri) {
-//        String[] projection = { MediaStore.Images.Media.DATA };
-//        Cursor cursor = managedQuery(uri, projection, null, null, null);
-//        if(cursor!=null)
-//        {
-//            //HERE YOU WILL GET A NULLPOINTER IF CURSOR IS NULL
-//            //THIS CAN BE, IF YOU USED OI FILE MANAGER FOR PICKING THE MEDIA
-//            int column_index = cursor
-//                    .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-//            cursor.moveToFirst();
-//            return cursor.getString(column_index);
-//        }
-//        else return null;
-//    }
+
     private Bitmap getBitmapFromUri(Uri uri) throws IOException {
         ParcelFileDescriptor parcelFileDescriptor =
                 getContentResolver().openFileDescriptor(uri, "r");
