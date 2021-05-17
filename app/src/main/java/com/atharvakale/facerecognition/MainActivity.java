@@ -1,4 +1,4 @@
-package com.example.facerecognition;
+package com.atharvakale.facerecognition;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -507,7 +507,7 @@ public class MainActivity extends AppCompatActivity {
                                                     int rot = imageProxy.getImageInfo().getRotationDegrees();
 
                                                     //Adjust orientation of Face
-                                                    Bitmap frame_bmp1 = rotateBitmap(frame_bmp, rot, flipX, false);
+                                                    Bitmap frame_bmp1 = rotateBitmap(frame_bmp, rot, false, false);
 
 
 
@@ -517,7 +517,8 @@ public class MainActivity extends AppCompatActivity {
                                                     //Crop out bounding box from whole Bitmap(image)
                                                     Bitmap cropped_face = getCropBitmapByCPU(frame_bmp1, boundingBox);
 
-
+                                                    if(flipX)
+                                                        cropped_face = rotateBitmap(cropped_face, 0, flipX, false);
                                                     //Scale the acquired Face to 112*112 which is required input for model
                                                     Bitmap scaled = getResizedBitmap(cropped_face, 112, 112);
 
@@ -525,7 +526,7 @@ public class MainActivity extends AppCompatActivity {
                                                         recognizeImage(scaled); //Send scaled bitmap to create face embeddings.
                                                     System.out.println(boundingBox);
                                                     try {
-                                                        Thread.sleep(100);  //Camera preview refreshed every 100 millisec(adjust as required)
+                                                        Thread.sleep(10);  //Camera preview refreshed every 10 millisec(adjust as required)
                                                     } catch (InterruptedException e) {
                                                         e.printStackTrace();
                                                     }

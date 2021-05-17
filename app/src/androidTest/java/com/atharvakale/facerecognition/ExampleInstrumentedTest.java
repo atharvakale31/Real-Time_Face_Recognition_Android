@@ -1,4 +1,4 @@
-package com.example.facerecognition;
+package com.atharvakale.facerecognition;
 
 import android.content.Context;
 
