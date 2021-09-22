@@ -1,5 +1,6 @@
 # Real Time Face Recognition App using TfLite
-This project is developed with the aim that the user should be able to implement this Face recognition module inside any other application where Face Recognition is required without any additional requirements.
+
+A minimalistic Face Recognition module which can be easily incorporated in any Android project.
 
 ## [Playstore Link](https://play.google.com/store/apps/details?id=com.atharvakale.facerecognition)
 

@@ -362,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
                             //System.out.println("status:"+checkedItems[i]);
                             if(checkedItems[i])
                             {
-                                Toast.makeText(MainActivity.this, names[i], Toast.LENGTH_SHORT).show();
+//                                Toast.makeText(MainActivity.this, names[i], Toast.LENGTH_SHORT).show();
                                 registered.remove(names[i]);
                             }
 
@@ -530,6 +530,13 @@ public class MainActivity extends AppCompatActivity {
                                                     } catch (InterruptedException e) {
                                                         e.printStackTrace();
                                                     }
+                                                }
+                                                else
+                                                {
+                                                    if(registered.isEmpty())
+                                                        reco_name.setText("Add Face");
+                                                    else
+                                                        reco_name.setText("No Face Detected!");
                                                 }
 
                                             }
